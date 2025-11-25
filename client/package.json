@@ -1,0 +1,24 @@
+{
+  "name": "cli-chat-client",
+  "version": "1.0.0",
+  "description": "Terminal chat client (TUI)",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "cli-chat": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node src/index.js"
+  },
+  "keywords": ["chat", "terminal", "tui", "cli"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "blessed": "^0.1.81",
+    "blessed-contrib": "^4.11.0",
+    "socket.io-client": "^4.6.1",
+    "axios": "^1.6.5",
+    "dotenv": "^16.3.1"
+  }
+}
