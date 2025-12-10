@@ -42,7 +42,7 @@ export function createChatScreen(screen, userData, token) {
     parent: screen,
     top: 3,
     left: 0,
-    width: 20,
+    width: 30,
     height: '50%-3',
     border: {
       type: 'line'
@@ -54,7 +54,8 @@ export function createChatScreen(screen, userData, token) {
     scrollable: true,
     alwaysScroll: true,
     keys: true,
-    vi: true
+    vi: true,
+    tags: true
   });
 
   // Online Users Box (bottom half of sidebar)
@@ -62,7 +63,7 @@ export function createChatScreen(screen, userData, token) {
     parent: screen,
     top: '50%',
     left: 0,
-    width: 20,
+    width: 30,
     height: '50%-3',
     border: {
       type: 'line'
@@ -74,15 +75,16 @@ export function createChatScreen(screen, userData, token) {
     scrollable: true,
     alwaysScroll: true,
     keys: true,
-    vi: true
+    vi: true,
+    tags: true
   });
 
   // Message Window
   const messageWindow = blessed.box({
     parent: screen,
     top: 3,
-    left: 20,
-    width: '100%-20',
+    left: 30,
+    width: '100%-30',
     height: '100%-6',
     border: {
       type: 'line'

@@ -1,6 +1,6 @@
 {
     "name": "@bnjkhr/cli-chat-client",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "Terminal chat client (TUI)",
     "main": "src/index.js",
     "type": "module",
