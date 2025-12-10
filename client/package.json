@@ -1,24 +1,37 @@
 {
-  "name": "cli-chat-client",
-  "version": "1.0.0",
-  "description": "Terminal chat client (TUI)",
-  "main": "src/index.js",
-  "type": "module",
-  "bin": {
-    "cli-chat": "./src/index.js"
-  },
-  "scripts": {
-    "start": "node src/index.js",
-    "dev": "node src/index.js"
-  },
-  "keywords": ["chat", "terminal", "tui", "cli"],
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "blessed": "^0.1.81",
-    "blessed-contrib": "^4.11.0",
-    "socket.io-client": "^4.6.1",
-    "axios": "^1.6.5",
-    "dotenv": "^16.3.1"
-  }
+    "name": "@bnjkhr/cli-chat-client",
+    "version": "1.0.3",
+    "description": "Terminal chat client (TUI)",
+    "main": "src/index.js",
+    "type": "module",
+    "bin": {
+        "cli-chat": "./bin.js"
+    },
+    "scripts": {
+        "start": "node src/index.js",
+        "dev": "node src/index.js"
+    },
+    "keywords": [
+        "chat",
+        "terminal",
+        "tui",
+        "cli"
+    ],
+    "author": "bnjkhr",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/bnjkhr/cli-chat.git"
+    },
+    "bugs": {
+        "url": "https://github.com/bnjkhr/cli-chat/issues"
+    },
+    "homepage": "https://github.com/bnjkhr/cli-chat#readme",
+    "dependencies": {
+        "blessed": "^0.1.81",
+        "blessed-contrib": "^4.11.0",
+        "socket.io-client": "^4.6.1",
+        "axios": "^1.6.5",
+        "dotenv": "^16.3.1"
+    }
 }

@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const SOCKET_URL = process.env.SOCKET_URL || 'http://localhost:3000';
+const SOCKET_URL = process.env.SOCKET_URL || 'https://cli-chat-production.up.railway.app';
 
 class SocketService {
   constructor() {

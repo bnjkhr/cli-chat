@@ -10,6 +10,7 @@ export function createChatScreen(screen, userData, token) {
   let currentRoom = null;
   let rooms = [];
   let messages = [];
+  let onlineUsers = [];
 
   // ============================================
   // Layout
@@ -36,13 +37,13 @@ export function createChatScreen(screen, userData, token) {
     tags: true
   });
 
-  // Sidebar (Rooms & Users)
+  // Sidebar - Rooms (top half)
   const sidebar = blessed.box({
     parent: screen,
     top: 3,
     left: 0,
     width: 20,
-    height: '100%-6',
+    height: '50%-3',
     border: {
       type: 'line'
     },
@@ -50,6 +51,26 @@ export function createChatScreen(screen, userData, token) {
       border: { fg: 'yellow' }
     },
     label: ' Rooms ',
+    scrollable: true,
+    alwaysScroll: true,
+    keys: true,
+    vi: true
+  });
+
+  // Online Users Box (bottom half of sidebar)
+  const onlineUsersBox = blessed.box({
+    parent: screen,
+    top: '50%',
+    left: 0,
+    width: 20,
+    height: '50%-3',
+    border: {
+      type: 'line'
+    },
+    style: {
+      border: { fg: 'magenta' }
+    },
+    label: ' Online ',
     scrollable: true,
     alwaysScroll: true,
     keys: true,
@@ -169,6 +190,21 @@ export function createChatScreen(screen, userData, token) {
     screen.render();
   }
 
+  function updateOnlineUsersList() {
+    let content = '';
+    if (onlineUsers.length === 0) {
+      content = '{gray-fg}No users online{/gray-fg}';
+    } else {
+      onlineUsers.forEach(user => {
+        const roleIcon = user.role === 'admin' ? '{red-fg}★{/red-fg} ' : '';
+        const isCurrentUser = user.username === username ? '{green-fg}(you){/green-fg}' : '';
+        content += `${roleIcon}${escapeBlessed(user.username)} ${isCurrentUser}\n`;
+      });
+    }
+    onlineUsersBox.setContent(content);
+    screen.render();
+  }
+
   // ============================================
   // Socket Event Handlers
   // ============================================
@@ -216,12 +252,16 @@ export function createChatScreen(screen, userData, token) {
       messages = [];
       addSystemMessage(`Joined #${escapeBlessed(data.roomName)}`, 'green');
       updateRoomsList();
+      // Load online users for the room
+      socketService.getUsers();
     });
 
     // User Joined
     socketService.on('user_joined', (data) => {
       if (data.roomId === currentRoom?.id) {
         addSystemMessage(`${escapeBlessed(data.username)} joined the room`, 'yellow');
+        // Refresh online users list
+        socketService.getUsers();
       }
     });
 
@@ -229,7 +269,15 @@ export function createChatScreen(screen, userData, token) {
     socketService.on('user_left', (data) => {
       if (data.roomId === currentRoom?.id) {
         addSystemMessage(`${escapeBlessed(data.username)} left the room`, 'yellow');
+        // Refresh online users list
+        socketService.getUsers();
       }
+    });
+
+    // Users List (for current room)
+    socketService.on('users_list', (data) => {
+      onlineUsers = data.users || [];
+      updateOnlineUsersList();
     });
 
     // Room Created
@@ -403,5 +451,5 @@ export function createChatScreen(screen, userData, token) {
 
   initialize();
 
-  return { header, sidebar, messageWindow, inputBox };
+  return { header, sidebar, onlineUsersBox, messageWindow, inputBox };
 }

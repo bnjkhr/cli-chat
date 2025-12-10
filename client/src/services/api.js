@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const API_URL = process.env.SERVER_URL || 'http://localhost:3000';
+const API_URL = process.env.SERVER_URL || 'https://cli-chat-production.up.railway.app';
 
 const api = axios.create({
   baseURL: API_URL,
