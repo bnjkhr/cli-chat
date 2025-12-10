@@ -24,7 +24,6 @@ class AuthService {
     }
 
     this.session = session;
-    console.log('[AuthService] Session set, expires_at:', session.expires_at, 'expires_in:', session.expires_in);
     this.startRefreshTimer();
   }
 
@@ -86,12 +85,8 @@ class AuthService {
     const refreshBuffer = 5 * 60 * 1000; // 5 Minuten in ms
     const timeUntilRefresh = timeUntilExpiry - refreshBuffer;
 
-    console.log('[AuthService] Token expires in', Math.floor(timeUntilExpiry / 1000), 'seconds');
-    console.log('[AuthService] Refresh scheduled in', Math.floor(timeUntilRefresh / 1000), 'seconds');
-
     // Wenn Token bereits abgelaufen oder weniger als 5 Minuten übrig, sofort erneuern
     if (timeUntilRefresh <= 0) {
-      console.log('[AuthService] Token expires soon, refreshing immediately');
       this.refreshToken().catch(err => {
         console.error('[AuthService] Immediate refresh failed:', err);
       });
@@ -100,7 +95,6 @@ class AuthService {
 
     // Timer setzen für automatischen Refresh
     this.refreshTimer = setTimeout(() => {
-      console.log('[AuthService] Refresh timer triggered, refreshing token...');
       this.refreshToken().catch(err => {
         console.error('[AuthService] Scheduled refresh failed:', err);
       });
@@ -126,8 +120,6 @@ class AuthService {
       return;
     }
 
-    console.log('[AuthService] Refreshing token...');
-
     try {
       const response = await api.post('/auth/refresh', {
         refresh_token: this.session.refresh_token
@@ -142,7 +134,6 @@ class AuthService {
         }
 
         this.session = newSession;
-        console.log('[AuthService] Token refreshed successfully');
 
         // Callbacks aufrufen mit neuem Token
         this.onTokenRefreshCallbacks.forEach(callback => {

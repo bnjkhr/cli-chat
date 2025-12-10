@@ -169,8 +169,6 @@ class SocketService {
     if (this.socket && this.socket.io) {
       this.socket.io.opts.auth = { token: newToken };
     }
-
-    console.log('[SocketService] Token updated for future reconnections');
   }
 }
 
