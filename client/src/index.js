@@ -3,6 +3,7 @@
 import blessed from 'blessed';
 import { createLoginScreen } from './ui/login.js';
 import { createChatScreen } from './ui/chat.js';
+import authService from './services/auth.js';
 
 /**
  * CLI-Chat Client Entry Point
@@ -17,6 +18,7 @@ const screen = blessed.screen({
 
 // Global Key Bindings
 screen.key(['C-c'], () => {
+  authService.clearSession();
   process.exit(0);
 });
 
@@ -24,12 +26,22 @@ screen.key(['C-c'], () => {
 function showLogin() {
   createLoginScreen(screen, (userData) => {
     // Login successful, show chat
-    const token = userData.session?.access_token;
-    if (!token) {
+    const session = userData.session;
+    if (!session || !session.access_token || !session.refresh_token) {
       console.error('No session token received. Email confirmation might be required.');
       process.exit(1);
     }
-    createChatScreen(screen, userData, token);
+
+    // Session im AuthService speichern und Auto-Refresh starten
+    try {
+      authService.setSession(session);
+    } catch (error) {
+      console.error('Failed to initialize session:', error);
+      process.exit(1);
+    }
+
+    // Chat Screen mit initialem Token starten
+    createChatScreen(screen, userData, session.access_token);
   });
 }
 

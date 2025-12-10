@@ -5,7 +5,7 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
-import { register, login, logout } from './handlers/auth.js';
+import { register, login, logout, refreshToken } from './handlers/auth.js';
 import { authenticateSocket } from './middleware/auth.js';
 import {
   handleSendMessage,
@@ -69,6 +69,7 @@ app.get('/', (req, res) => {
 app.post('/auth/register', register);
 app.post('/auth/login', login);
 app.post('/auth/logout', logout);
+app.post('/auth/refresh', refreshToken);
 
 // Health Check
 app.get('/health', (req, res) => {

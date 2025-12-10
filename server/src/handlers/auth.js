@@ -166,3 +166,41 @@ export async function logout(req, res) {
     res.status(500).json({ error: 'Logout failed' });
   }
 }
+
+/**
+ * POST /auth/refresh
+ * Token erneuern
+ */
+export async function refreshToken(req, res) {
+  const { refresh_token } = req.body;
+
+  if (!refresh_token) {
+    return res.status(400).json({ error: 'Refresh token required' });
+  }
+
+  try {
+    // Token mit Supabase erneuern
+    const { data, error } = await supabase.auth.refreshSession({
+      refresh_token
+    });
+
+    if (error) {
+      logger.warn('Token refresh failed:', error.message);
+      return res.status(401).json({ error: 'Invalid or expired refresh token' });
+    }
+
+    if (!data.session) {
+      return res.status(401).json({ error: 'Failed to refresh session' });
+    }
+
+    logger.info(`Token refreshed for user: ${data.user.id}`);
+
+    res.json({
+      message: 'Token refreshed successfully',
+      session: data.session
+    });
+  } catch (error) {
+    logger.error('Token refresh error:', error);
+    res.status(500).json({ error: 'Token refresh failed' });
+  }
+}

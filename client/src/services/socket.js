@@ -154,6 +154,32 @@ class SocketService {
       this.connected = false;
     }
   }
+
+  /**
+   * Token aktualisieren (reconnect mit neuem Token)
+   */
+  async updateToken(newToken) {
+    if (!this.socket) {
+      return;
+    }
+
+    // Speichere aktuellen Raum und Listener
+    const wasConnected = this.connected;
+
+    // Alte Verbindung trennen
+    this.socket.disconnect();
+
+    // Nur reconnecten wenn vorher verbunden
+    if (wasConnected) {
+      try {
+        // Neue Verbindung mit neuem Token herstellen
+        await this.connect(newToken);
+      } catch (error) {
+        console.error('Failed to reconnect with new token:', error);
+        throw error;
+      }
+    }
+  }
 }
 
 export default new SocketService();

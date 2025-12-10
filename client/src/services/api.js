@@ -61,4 +61,21 @@ export async function logout() {
   }
 }
 
+/**
+ * Token erneuern
+ */
+export async function refreshToken(refreshToken) {
+  try {
+    const response = await api.post('/auth/refresh', {
+      refresh_token: refreshToken
+    });
+    return { success: true, data: response.data };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || 'Token refresh failed'
+    };
+  }
+}
+
 export default api;

@@ -1,5 +1,6 @@
 import blessed from 'blessed';
 import socketService from '../services/socket.js';
+import authService from '../services/auth.js';
 import { parseCommand, getHelpText } from '../utils/commands.js';
 
 /**
@@ -444,6 +445,18 @@ export function createChatScreen(screen, userData, token) {
       addSystemMessage('Connecting to server...', 'yellow');
       setupSocketListeners(); // Set up listeners BEFORE connecting
       await socketService.connect(token);
+
+      // Token-Refresh-Callback registrieren
+      authService.onTokenRefresh(async (newToken) => {
+        try {
+          addSystemMessage('Session refreshed', 'gray');
+          await socketService.updateToken(newToken);
+        } catch (error) {
+          addSystemMessage('Failed to update connection. Please restart the app.', 'red');
+          setTimeout(() => process.exit(1), 3000);
+        }
+      });
+
       inputBox.focus();
     } catch (error) {
       addSystemMessage(`Connection failed: ${error.message}`, 'red');
