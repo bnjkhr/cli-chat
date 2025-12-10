@@ -197,8 +197,11 @@ export function createLoginScreen(screen, onSuccess) {
     }
 
     if (result.success) {
-      // Clean up key listener to prevent memory leak
+      // Clean up key listeners to prevent memory leak
       screen.unkey(['tab'], toggleMode);
+      emailInput.unkey(['tab'], toggleMode);
+      passwordInput.unkey(['tab'], toggleMode);
+      usernameInput.unkey(['tab'], toggleMode);
       box.destroy();
       onSuccess(result.data);
     } else {
@@ -209,6 +212,11 @@ export function createLoginScreen(screen, onSuccess) {
 
   // Key Bindings
   screen.key(['tab'], toggleMode);
+
+  // Allow tab key to toggle mode even when inputs have focus
+  emailInput.key(['tab'], toggleMode);
+  passwordInput.key(['tab'], toggleMode);
+  usernameInput.key(['tab'], toggleMode);
 
   emailInput.key(['enter'], () => {
     if (isLoginMode) {
