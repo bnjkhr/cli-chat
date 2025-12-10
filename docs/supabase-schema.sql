@@ -89,7 +89,10 @@ CREATE POLICY "Users can view room messages and own DMs"
 
 CREATE POLICY "Users can create messages"
   ON messages FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (
+    auth.uid() = user_id AND
+    NOT is_user_banned(auth.uid())
+  );
 
 -- Rooms: Alle können lesen
 ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
@@ -159,14 +162,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Funktion: Update last_seen beim Login
+-- Funktion: Update last_seen bei Aktivität
 CREATE OR REPLACE FUNCTION update_last_seen()
 RETURNS TRIGGER AS $$
 BEGIN
-  UPDATE profiles SET last_seen = NOW() WHERE id = NEW.id;
+  UPDATE profiles SET last_seen = NOW() WHERE id = NEW.user_id;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger: Auto-update last_seen
--- (Wird vom Server bei jedem connect aufgerufen)
+-- Trigger: Auto-update last_seen bei Nachrichten
+-- Aktualisiert last_seen automatisch wenn User eine Nachricht sendet
+CREATE TRIGGER trigger_update_last_seen
+  AFTER INSERT ON messages
+  FOR EACH ROW
+  EXECUTE FUNCTION update_last_seen();

@@ -75,14 +75,6 @@ export function createLoginScreen(screen, onSuccess) {
     }
   });
 
-  // Password Input
-  blessed.text({
-    parent: box,
-    top: 10,
-    left: 2,
-    content: 'Password:'
-  });
-
   const passwordInput = blessed.textbox({
     parent: box,
     top: 11,
@@ -205,6 +197,8 @@ export function createLoginScreen(screen, onSuccess) {
     }
 
     if (result.success) {
+      // Clean up key listener to prevent memory leak
+      screen.unkey(['tab'], toggleMode);
       box.destroy();
       onSuccess(result.data);
     } else {

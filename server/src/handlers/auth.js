@@ -32,7 +32,7 @@ export async function register(req, res) {
       .from('profiles')
       .select('username')
       .eq('username', username)
-      .single();
+      .maybeSingle();
 
     if (existingProfile) {
       return res.status(409).json({ error: 'Username already taken' });
@@ -110,7 +110,7 @@ export async function login(req, res) {
       .from('bans')
       .select('reason, banned_at')
       .eq('user_id', data.user.id)
-      .single();
+      .maybeSingle();
 
     if (ban) {
       return res.status(403).json({
@@ -125,7 +125,7 @@ export async function login(req, res) {
       .from('profiles')
       .select('username, role')
       .eq('id', data.user.id)
-      .single();
+      .maybeSingle();
 
     // Update last_seen
     await supabaseAdmin

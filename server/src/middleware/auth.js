@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase.js';
+import logger from '../utils/logger.js';
 
 /**
  * Middleware: JWT Token validieren
@@ -24,7 +25,7 @@ export async function authenticateToken(req, res, next) {
     req.user = user;
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    logger.error('Auth middleware error:', error);
     return res.status(500).json({ error: 'Authentication failed' });
   }
 }
@@ -55,14 +56,14 @@ export async function authenticateSocket(socket, next) {
       .from('profiles')
       .select('username, role')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     socket.username = profile?.username || 'Unknown';
     socket.role = profile?.role || 'user';
 
     next();
   } catch (error) {
-    console.error('Socket auth error:', error);
+    logger.error('Socket auth error:', error);
     next(new Error('Authentication failed'));
   }
 }

@@ -15,6 +15,9 @@ export function createChatScreen(screen, userData, token) {
   // Layout
   // ============================================
 
+  // Escape username in header to prevent tag injection
+  const safeHeaderUsername = username.replace(/\{/g, '\\{').replace(/\}/g, '\\}');
+
   // Header
   const header = blessed.box({
     parent: screen,
@@ -29,7 +32,7 @@ export function createChatScreen(screen, userData, token) {
       border: { fg: 'cyan' },
       fg: 'white'
     },
-    content: ` {bold}{cyan-fg}CLI-CHAT v1.0{/cyan-fg}{/bold}                    Connected: {green-fg}${username}${role === 'admin' ? ' [ADMIN]' : ''}{/green-fg}`,
+    content: ` {bold}{cyan-fg}CLI-CHAT v1.0{/cyan-fg}{/bold}                    Connected: {green-fg}${safeHeaderUsername}${role === 'admin' ? ' [ADMIN]' : ''}{/green-fg}`,
     tags: true
   });
 
@@ -104,6 +107,16 @@ export function createChatScreen(screen, userData, token) {
   // Helper Functions
   // ============================================
 
+  /**
+   * Escape blessed formatting tags in user content to prevent tag injection
+   */
+  function escapeBlessed(text) {
+    if (!text) return '';
+    return String(text)
+      .replace(/\{/g, '\\{')
+      .replace(/\}/g, '\\}');
+  }
+
   function addMessage(msg, color = 'white') {
     const timestamp = new Date(msg.created_at || Date.now()).toLocaleTimeString('de-DE', {
       hour: '2-digit',
@@ -115,7 +128,11 @@ export function createChatScreen(screen, userData, token) {
       roleTag = '{red-fg}[ADMIN]{/red-fg} ';
     }
 
-    const line = `{gray-fg}[${timestamp}]{/gray-fg} ${roleTag}{${color}-fg}${msg.username}:{/${color}-fg} ${msg.content}`;
+    // Escape user-provided content to prevent tag injection
+    const safeUsername = escapeBlessed(msg.username);
+    const safeContent = escapeBlessed(msg.content);
+
+    const line = `{gray-fg}[${timestamp}]{/gray-fg} ${roleTag}{${color}-fg}${safeUsername}:{/${color}-fg} ${safeContent}`;
     messages.push(line);
 
     // Limit zu 1000 Nachrichten
@@ -146,7 +163,7 @@ export function createChatScreen(screen, userData, token) {
     let content = '';
     rooms.forEach(room => {
       const marker = currentRoom?.id === room.id ? '{green-fg}► {/green-fg}' : '  ';
-      content += `${marker}#${room.name}\n`;
+      content += `${marker}#${escapeBlessed(room.name)}\n`;
     });
     sidebar.setContent(content);
     screen.render();
@@ -159,7 +176,7 @@ export function createChatScreen(screen, userData, token) {
   function setupSocketListeners() {
     // Authenticated
     socketService.on('authenticated', (data) => {
-      addSystemMessage(`Connected as ${data.username}`, 'green');
+      addSystemMessage(`Connected as ${escapeBlessed(data.username)}`, 'green');
       // Load rooms
       socketService.getRooms();
     });
@@ -195,35 +212,35 @@ export function createChatScreen(screen, userData, token) {
     // Joined Room
     socketService.on('joined_room', (data) => {
       currentRoom = { id: data.roomId, name: data.roomName };
-      messageWindow.setLabel(` #${data.roomName} `);
+      messageWindow.setLabel(` #${escapeBlessed(data.roomName)} `);
       messages = [];
-      addSystemMessage(`Joined #${data.roomName}`, 'green');
+      addSystemMessage(`Joined #${escapeBlessed(data.roomName)}`, 'green');
       updateRoomsList();
     });
 
     // User Joined
     socketService.on('user_joined', (data) => {
       if (data.roomId === currentRoom?.id) {
-        addSystemMessage(`${data.username} joined the room`, 'yellow');
+        addSystemMessage(`${escapeBlessed(data.username)} joined the room`, 'yellow');
       }
     });
 
     // User Left
     socketService.on('user_left', (data) => {
       if (data.roomId === currentRoom?.id) {
-        addSystemMessage(`${data.username} left the room`, 'yellow');
+        addSystemMessage(`${escapeBlessed(data.username)} left the room`, 'yellow');
       }
     });
 
     // Room Created
     socketService.on('room_created', (data) => {
-      addSystemMessage(`New room created: #${data.room.name}`, 'green');
+      addSystemMessage(`New room created: #${escapeBlessed(data.room.name)}`, 'green');
       socketService.getRooms();
     });
 
     // Room Deleted
     socketService.on('room_deleted', (data) => {
-      addSystemMessage(`Room #${data.roomName} has been deleted`, 'red');
+      addSystemMessage(`Room #${escapeBlessed(data.roomName)} has been deleted`, 'red');
       if (currentRoom?.id === data.roomId) {
         currentRoom = null;
         messages = [];
@@ -233,23 +250,23 @@ export function createChatScreen(screen, userData, token) {
 
     // Error
     socketService.on('error', (data) => {
-      addSystemMessage(`ERROR: ${data.message}`, 'red');
+      addSystemMessage(`ERROR: ${escapeBlessed(data.message)}`, 'red');
     });
 
     // Success
     socketService.on('success', (data) => {
-      addSystemMessage(data.message, 'green');
+      addSystemMessage(escapeBlessed(data.message), 'green');
     });
 
     // Kicked
     socketService.on('kicked', (data) => {
-      addSystemMessage(`You have been kicked by ${data.by}. Reason: ${data.reason}`, 'red');
+      addSystemMessage(`You have been kicked by ${escapeBlessed(data.by)}. Reason: ${escapeBlessed(data.reason)}`, 'red');
       setTimeout(() => process.exit(0), 3000);
     });
 
     // Banned
     socketService.on('banned', (data) => {
-      addSystemMessage(`You have been banned by ${data.by}. Reason: ${data.reason}`, 'red');
+      addSystemMessage(`You have been banned by ${escapeBlessed(data.by)}. Reason: ${escapeBlessed(data.reason)}`, 'red');
       setTimeout(() => process.exit(0), 3000);
     });
 
@@ -293,7 +310,7 @@ export function createChatScreen(screen, userData, token) {
       case 'rooms':
         let roomsList = '\n{cyan-fg}Available Rooms:{/cyan-fg}\n';
         rooms.forEach(r => {
-          roomsList += `  #${r.name} - ${r.description || 'No description'}\n`;
+          roomsList += `  #${escapeBlessed(r.name)} - ${escapeBlessed(r.description || 'No description')}\n`;
         });
         messages.push(roomsList);
         renderMessages();
@@ -375,8 +392,8 @@ export function createChatScreen(screen, userData, token) {
   async function initialize() {
     try {
       addSystemMessage('Connecting to server...', 'yellow');
+      setupSocketListeners(); // Set up listeners BEFORE connecting
       await socketService.connect(token);
-      setupSocketListeners();
       inputBox.focus();
     } catch (error) {
       addSystemMessage(`Connection failed: ${error.message}`, 'red');

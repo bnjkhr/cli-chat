@@ -40,7 +40,9 @@ const PORT = process.env.PORT || 3000;
 // Express Middleware
 // ============================================
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*'
+}));
 app.use(express.json());
 
 // Rate Limiting
@@ -158,6 +160,7 @@ io.on('connection', (socket) => {
   // ============================================
 
   socket.on('typing_start', (data) => {
+    if (!data) return;
     const { roomId } = data;
     if (roomId) {
       socket.to(`room:${roomId}`).emit('user_typing', {
@@ -168,6 +171,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('typing_stop', (data) => {
+    if (!data) return;
     const { roomId } = data;
     if (roomId) {
       socket.to(`room:${roomId}`).emit('user_stopped_typing', {

@@ -16,6 +16,10 @@ export async function handleCreateRoom(socket, data) {
     return socket.emit('error', { message: 'Admin privileges required' });
   }
 
+  if (!data) {
+    return socket.emit('error', { message: 'Invalid room data' });
+  }
+
   const { name, description } = data;
   const userId = socket.userId;
 
@@ -77,6 +81,10 @@ export async function handleBanUser(io, socket, data) {
     return socket.emit('error', { message: 'Admin privileges required' });
   }
 
+  if (!data) {
+    return socket.emit('error', { message: 'Invalid ban data' });
+  }
+
   const { username, reason } = data;
   const adminId = socket.userId;
 
@@ -90,7 +98,7 @@ export async function handleBanUser(io, socket, data) {
       .from('profiles')
       .select('id, username, role')
       .eq('username', username)
-      .single();
+      .maybeSingle();
 
     if (!profile) {
       return socket.emit('error', { message: 'User not found' });
@@ -106,7 +114,7 @@ export async function handleBanUser(io, socket, data) {
       .from('bans')
       .select('id')
       .eq('user_id', profile.id)
-      .single();
+      .maybeSingle();
 
     if (existingBan) {
       return socket.emit('error', { message: 'User is already banned' });
@@ -150,6 +158,10 @@ export async function handleUnbanUser(socket, data) {
     return socket.emit('error', { message: 'Admin privileges required' });
   }
 
+  if (!data) {
+    return socket.emit('error', { message: 'Invalid unban data' });
+  }
+
   const { username } = data;
 
   if (!username) {
@@ -162,7 +174,7 @@ export async function handleUnbanUser(socket, data) {
       .from('profiles')
       .select('id, username')
       .eq('username', username)
-      .single();
+      .maybeSingle();
 
     if (!profile) {
       return socket.emit('error', { message: 'User not found' });
@@ -193,6 +205,10 @@ export async function handleKickUser(io, socket, data) {
     return socket.emit('error', { message: 'Admin privileges required' });
   }
 
+  if (!data) {
+    return socket.emit('error', { message: 'Invalid kick data' });
+  }
+
   const { username, reason } = data;
 
   if (!username) {
@@ -205,7 +221,7 @@ export async function handleKickUser(io, socket, data) {
       .from('profiles')
       .select('id, username, role')
       .eq('username', username)
-      .single();
+      .maybeSingle();
 
     if (!profile) {
       return socket.emit('error', { message: 'User not found' });
@@ -242,6 +258,10 @@ export async function handleDeleteRoom(io, socket, data) {
     return socket.emit('error', { message: 'Admin privileges required' });
   }
 
+  if (!data) {
+    return socket.emit('error', { message: 'Invalid room data' });
+  }
+
   const { roomId } = data;
 
   if (!roomId) {
@@ -254,7 +274,7 @@ export async function handleDeleteRoom(io, socket, data) {
       .from('rooms')
       .select('name')
       .eq('id', roomId)
-      .single();
+      .maybeSingle();
 
     if (!room) {
       return socket.emit('error', { message: 'Room not found' });
@@ -270,15 +290,14 @@ export async function handleDeleteRoom(io, socket, data) {
 
     logger.info(`Admin ${socket.username} deleted room: ${room.name}`);
 
-    // Alle aus dem Raum kicken
+    // Alle aus dem Raum kicken (cleanup room state)
     const socketsInRoom = await io.in(`room:${roomId}`).fetchSockets();
     for (const s of socketsInRoom) {
       s.leave(`room:${roomId}`);
       s.currentRoom = null;
-      s.emit('room_deleted', { roomId, roomName: room.name });
     }
 
-    // Broadcast: Raum gelöscht
+    // Broadcast: Raum gelöscht (notifies all clients including those who were in the room)
     io.emit('room_deleted', { roomId, roomName: room.name });
 
     socket.emit('success', { message: `Room ${room.name} has been deleted` });

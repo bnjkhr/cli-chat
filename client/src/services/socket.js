@@ -9,6 +9,7 @@ class SocketService {
   constructor() {
     this.socket = null;
     this.connected = false;
+    this.pendingListeners = []; // Buffer for listeners added before connection
   }
 
   /**
@@ -22,6 +23,12 @@ class SocketService {
         reconnectionDelay: 1000,
         reconnectionAttempts: 5
       });
+
+      // Attach all pending listeners
+      this.pendingListeners.forEach(({ event, callback }) => {
+        this.socket.on(event, callback);
+      });
+      this.pendingListeners = [];
 
       this.socket.on('connect', () => {
         this.connected = true;
@@ -122,7 +129,12 @@ class SocketService {
    * Event Listener registrieren
    */
   on(event, callback) {
-    this.socket.on(event, callback);
+    if (this.socket) {
+      this.socket.on(event, callback);
+    } else {
+      // Buffer listener if socket doesn't exist yet
+      this.pendingListeners.push({ event, callback });
+    }
   }
 
   /**

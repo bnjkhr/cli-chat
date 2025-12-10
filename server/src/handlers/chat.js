@@ -5,6 +5,10 @@ import logger from '../utils/logger.js';
  * Handler: Nachricht senden (Room oder DM)
  */
 export async function handleSendMessage(io, socket, data) {
+  if (!data) {
+    return socket.emit('error', { message: 'Invalid message data' });
+  }
+
   const { roomId, recipientId, content } = data;
   const userId = socket.userId;
   const username = socket.username;
@@ -29,7 +33,7 @@ export async function handleSendMessage(io, socket, data) {
       .from('bans')
       .select('id')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (ban) {
       return socket.emit('error', { message: 'You are banned from chatting' });
@@ -89,6 +93,10 @@ export async function handleSendMessage(io, socket, data) {
  * Handler: Raum beitreten
  */
 export async function handleJoinRoom(io, socket, data) {
+  if (!data) {
+    return socket.emit('error', { message: 'Invalid room data' });
+  }
+
   const { roomId } = data;
   const username = socket.username;
 
@@ -98,7 +106,7 @@ export async function handleJoinRoom(io, socket, data) {
       .from('rooms')
       .select('id, name, description')
       .eq('id', roomId)
-      .single();
+      .maybeSingle();
 
     if (error || !room) {
       return socket.emit('error', { message: 'Room not found' });
@@ -159,6 +167,10 @@ export async function handleJoinRoom(io, socket, data) {
  * Handler: Raum verlassen
  */
 export async function handleLeaveRoom(socket, data) {
+  if (!data) {
+    return socket.emit('error', { message: 'Invalid room data' });
+  }
+
   const { roomId } = data;
   const username = socket.username;
 
