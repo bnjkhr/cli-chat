@@ -10,12 +10,14 @@ class SocketService {
     this.socket = null;
     this.connected = false;
     this.pendingListeners = []; // Buffer for listeners added before connection
+    this.currentToken = null; // Store current token for reconnection
   }
 
   /**
    * Verbindung zum Server herstellen
    */
   connect(token) {
+    this.currentToken = token; // Token für Reconnection speichern
     return new Promise((resolve, reject) => {
       this.socket = io(SOCKET_URL, {
         auth: { token },
@@ -156,29 +158,19 @@ class SocketService {
   }
 
   /**
-   * Token aktualisieren (reconnect mit neuem Token)
+   * Token aktualisieren (für zukünftige Reconnects)
    */
-  async updateToken(newToken) {
-    if (!this.socket) {
-      return;
+  updateToken(newToken) {
+    // Speichere neuen Token für automatische Reconnection
+    // Kein manueller Disconnect/Reconnect nötig - Socket.IO validiert Token nur beim Connect
+    this.currentToken = newToken;
+
+    // Update auth für automatische Reconnections
+    if (this.socket && this.socket.io) {
+      this.socket.io.opts.auth = { token: newToken };
     }
 
-    // Speichere aktuellen Raum und Listener
-    const wasConnected = this.connected;
-
-    // Alte Verbindung trennen
-    this.socket.disconnect();
-
-    // Nur reconnecten wenn vorher verbunden
-    if (wasConnected) {
-      try {
-        // Neue Verbindung mit neuem Token herstellen
-        await this.connect(newToken);
-      } catch (error) {
-        console.error('Failed to reconnect with new token:', error);
-        throw error;
-      }
-    }
+    console.log('[SocketService] Token updated for future reconnections');
   }
 }
 
