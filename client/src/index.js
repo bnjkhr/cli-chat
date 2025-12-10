@@ -24,7 +24,11 @@ screen.key(['C-c'], () => {
 function showLogin() {
   createLoginScreen(screen, (userData) => {
     // Login successful, show chat
-    const token = userData.session.access_token;
+    const token = userData.session?.access_token;
+    if (!token) {
+      console.error('No session token received. Email confirmation might be required.');
+      process.exit(1);
+    }
     createChatScreen(screen, userData, token);
   });
 }
