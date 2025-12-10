@@ -18,7 +18,13 @@ class AuthService {
       throw new Error('Invalid session object');
     }
 
+    // Wenn expires_in vorhanden ist, berechne expires_at
+    if (session.expires_in && !session.expires_at) {
+      session.expires_at = Math.floor(Date.now() / 1000) + session.expires_in;
+    }
+
     this.session = session;
+    console.log('[AuthService] Session set, expires_at:', session.expires_at, 'expires_in:', session.expires_in);
     this.startRefreshTimer();
   }
 
@@ -69,6 +75,7 @@ class AuthService {
     this.stopRefreshTimer(); // Vorherigen Timer stoppen
 
     if (!this.session || !this.session.expires_at) {
+      console.error('[AuthService] Cannot start refresh timer: no expires_at in session', this.session);
       return;
     }
 
@@ -79,14 +86,19 @@ class AuthService {
     const refreshBuffer = 5 * 60 * 1000; // 5 Minuten in ms
     const timeUntilRefresh = timeUntilExpiry - refreshBuffer;
 
+    console.log('[AuthService] Token expires in', Math.floor(timeUntilExpiry / 1000), 'seconds');
+    console.log('[AuthService] Refresh scheduled in', Math.floor(timeUntilRefresh / 1000), 'seconds');
+
     // Wenn Token bereits abgelaufen oder weniger als 5 Minuten übrig, sofort erneuern
     if (timeUntilRefresh <= 0) {
+      console.log('[AuthService] Token expires soon, refreshing immediately');
       this.refreshToken();
       return;
     }
 
     // Timer setzen für automatischen Refresh
     this.refreshTimer = setTimeout(() => {
+      console.log('[AuthService] Refresh timer triggered, refreshing token...');
       this.refreshToken();
     }, timeUntilRefresh);
   }
@@ -109,6 +121,8 @@ class AuthService {
       throw new Error('No refresh token available');
     }
 
+    console.log('[AuthService] Refreshing token...');
+
     try {
       const response = await api.post('/auth/refresh', {
         refresh_token: this.session.refresh_token
@@ -116,14 +130,21 @@ class AuthService {
 
       if (response.data && response.data.session) {
         const newSession = response.data.session;
+
+        // Wenn expires_in vorhanden ist, berechne expires_at
+        if (newSession.expires_in && !newSession.expires_at) {
+          newSession.expires_at = Math.floor(Date.now() / 1000) + newSession.expires_in;
+        }
+
         this.session = newSession;
+        console.log('[AuthService] Token refreshed successfully');
 
         // Callbacks aufrufen mit neuem Token
         this.onTokenRefreshCallbacks.forEach(callback => {
           try {
             callback(newSession.access_token);
           } catch (error) {
-            console.error('Error in token refresh callback:', error);
+            console.error('[AuthService] Error in token refresh callback:', error);
           }
         });
 
@@ -135,7 +156,7 @@ class AuthService {
         throw new Error('Invalid response from refresh endpoint');
       }
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      console.error('[AuthService] Token refresh failed:', error);
 
       // Session löschen bei Fehler
       this.clearSession();
