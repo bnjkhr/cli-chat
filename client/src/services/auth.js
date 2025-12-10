@@ -92,14 +92,18 @@ class AuthService {
     // Wenn Token bereits abgelaufen oder weniger als 5 Minuten übrig, sofort erneuern
     if (timeUntilRefresh <= 0) {
       console.log('[AuthService] Token expires soon, refreshing immediately');
-      this.refreshToken();
+      this.refreshToken().catch(err => {
+        console.error('[AuthService] Immediate refresh failed:', err);
+      });
       return;
     }
 
     // Timer setzen für automatischen Refresh
     this.refreshTimer = setTimeout(() => {
       console.log('[AuthService] Refresh timer triggered, refreshing token...');
-      this.refreshToken();
+      this.refreshToken().catch(err => {
+        console.error('[AuthService] Scheduled refresh failed:', err);
+      });
     }, timeUntilRefresh);
   }
 
@@ -118,7 +122,8 @@ class AuthService {
    */
   async refreshToken() {
     if (!this.session || !this.session.refresh_token) {
-      throw new Error('No refresh token available');
+      console.error('[AuthService] No refresh token available');
+      return;
     }
 
     console.log('[AuthService] Refreshing token...');
@@ -157,10 +162,8 @@ class AuthService {
       }
     } catch (error) {
       console.error('[AuthService] Token refresh failed:', error);
-
-      // Session löschen bei Fehler
-      this.clearSession();
-
+      // NICHT clearSession() aufrufen - das würde den User rauswerfen
+      // Stattdessen einfach fehlschlagen und später retry
       throw error;
     }
   }
