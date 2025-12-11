@@ -447,11 +447,10 @@ export function createChatScreen(screen, userData, token) {
       await socketService.connect(token);
 
       // Token-Refresh-Callback registrieren
-      // Hinweis: Socket.IO validiert Token nur beim Connect, nicht während der Verbindung
-      // Daher muss die Verbindung NICHT neu aufgebaut werden
       authService.onTokenRefresh(async (newToken) => {
         addSystemMessage('Session refreshed', 'gray');
-        // Kein Socket-Update nötig - Verbindung ist bereits authentifiziert
+        // Update Socket.IO auth für zukünftige Reconnections
+        socketService.updateToken(newToken);
       });
 
       inputBox.focus();
