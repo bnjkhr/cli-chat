@@ -20,10 +20,13 @@ class SocketService {
     this.currentToken = token; // Token für Reconnection speichern
     return new Promise((resolve, reject) => {
       this.socket = io(SOCKET_URL, {
-        auth: { token },
+        // Auth als Funktion: wird bei JEDEM Connect/Reconnect aufgerufen
+        auth: (cb) => {
+          cb({ token: this.currentToken });
+        },
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionAttempts: 5
+        reconnectionAttempts: Infinity // Unbegrenzte Reconnection-Versuche
       });
 
       // Attach all pending listeners
@@ -161,14 +164,9 @@ class SocketService {
    * Token aktualisieren (für zukünftige Reconnects)
    */
   updateToken(newToken) {
-    // Speichere neuen Token für automatische Reconnection
-    // Kein manueller Disconnect/Reconnect nötig - Socket.IO validiert Token nur beim Connect
+    // Speichere neuen Token - wird automatisch bei nächster Reconnection verwendet
+    // (weil auth als Funktion übergeben wird, die this.currentToken abruft)
     this.currentToken = newToken;
-
-    // Update auth für automatische Reconnections
-    if (this.socket && this.socket.io) {
-      this.socket.io.opts.auth = { token: newToken };
-    }
   }
 }
 
