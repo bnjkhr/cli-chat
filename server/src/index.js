@@ -12,7 +12,8 @@ import {
   handleJoinRoom,
   handleLeaveRoom,
   handleGetRooms,
-  handleGetUsers
+  handleGetUsers,
+  handleResolveUser
 } from './handlers/chat.js';
 import {
   handleCreateRoom,
@@ -128,6 +129,11 @@ io.on('connection', (socket) => {
   // User im Raum auflisten
   socket.on('get_users', () => {
     handleGetUsers(io, socket);
+  });
+
+  // Username zu User-ID auflösen (für DMs)
+  socket.on('resolve_user', (data) => {
+    handleResolveUser(socket, data);
   });
 
   // ============================================

@@ -141,7 +141,7 @@ export function createChatScreen(screen, userData, token) {
       .replace(/\}/g, '\\}');
   }
 
-  function addMessage(msg, color = 'white') {
+  function addMessage(msg, color = 'white', isDM = false) {
     const timestamp = new Date(msg.created_at || Date.now()).toLocaleTimeString('de-DE', {
       hour: '2-digit',
       minute: '2-digit'
@@ -152,11 +152,14 @@ export function createChatScreen(screen, userData, token) {
       roleTag = '{red-fg}[ADMIN]{/red-fg} ';
     }
 
+    // DM-Kennzeichnung
+    const dmTag = isDM ? '{magenta-fg}[DM]{/magenta-fg} ' : '';
+
     // Escape user-provided content to prevent tag injection
     const safeUsername = escapeBlessed(msg.username);
     const safeContent = escapeBlessed(msg.content);
 
-    const line = `{gray-fg}[${timestamp}]{/gray-fg} ${roleTag}{${color}-fg}${safeUsername}:{/${color}-fg} ${safeContent}`;
+    const line = `{gray-fg}[${timestamp}]{/gray-fg} ${dmTag}${roleTag}{${color}-fg}${safeUsername}:{/${color}-fg} ${safeContent}`;
     messages.push(line);
 
     // Limit zu 1000 Nachrichten
@@ -222,7 +225,12 @@ export function createChatScreen(screen, userData, token) {
 
     // Message received
     socketService.on('message', (msg) => {
-      if (msg.roomId === currentRoom?.id || msg.recipientId === userData.user.id) {
+      // DM erhalten oder gesendet
+      if (msg.recipientId) {
+        addMessage(msg, 'magenta', true);
+      }
+      // Room-Nachricht (nur wenn im richtigen Raum)
+      else if (msg.roomId === currentRoom?.id) {
         addMessage(msg, 'cyan');
       }
     });
@@ -409,6 +417,18 @@ export function createChatScreen(screen, userData, token) {
         } else {
           addSystemMessage(`Room #${cmd.roomName} not found`, 'red');
         }
+        break;
+
+      case 'dm':
+        (async () => {
+          addSystemMessage(`Sending DM to ${escapeBlessed(cmd.recipient)}...`, 'gray');
+          const recipientId = await socketService.resolveUser(cmd.recipient);
+          if (recipientId) {
+            socketService.sendDM(recipientId, cmd.message);
+          } else {
+            addSystemMessage(`User "${escapeBlessed(cmd.recipient)}" not found`, 'red');
+          }
+        })();
         break;
 
       case 'error':

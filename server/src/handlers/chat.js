@@ -231,3 +231,31 @@ export async function handleGetUsers(io, socket) {
     socket.emit('error', { message: 'Failed to fetch users' });
   }
 }
+
+/**
+ * Handler: Username zu User-ID auflösen
+ */
+export async function handleResolveUser(socket, data) {
+  if (!data || !data.username) {
+    return socket.emit('error', { message: 'Username required' });
+  }
+
+  const { username } = data;
+
+  try {
+    const { data: profile, error } = await supabaseAdmin
+      .from('profiles')
+      .select('id, username')
+      .eq('username', username)
+      .maybeSingle();
+
+    if (error || !profile) {
+      return socket.emit('user_resolved', { username, userId: null, error: 'User not found' });
+    }
+
+    socket.emit('user_resolved', { username, userId: profile.id });
+  } catch (error) {
+    logger.error('Resolve user error:', error);
+    socket.emit('user_resolved', { username, userId: null, error: 'Failed to resolve user' });
+  }
+}

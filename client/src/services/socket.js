@@ -68,6 +68,29 @@ class SocketService {
   }
 
   /**
+   * Username zu User-ID auflösen
+   * @returns {Promise<string|null>} User-ID oder null wenn nicht gefunden
+   */
+  resolveUser(username) {
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        resolve(null);
+      }, 5000);
+
+      const handler = (data) => {
+        if (data.username === username) {
+          clearTimeout(timeout);
+          this.socket.off('user_resolved', handler);
+          resolve(data.userId);
+        }
+      };
+
+      this.socket.on('user_resolved', handler);
+      this.socket.emit('resolve_user', { username });
+    });
+  }
+
+  /**
    * Raum beitreten
    */
   joinRoom(roomId) {
