@@ -325,6 +325,16 @@ export function createChatScreen(screen, userData, token) {
     socketService.on('disconnect', () => {
       addSystemMessage('Disconnected from server', 'red');
     });
+
+    // User Online (global)
+    socketService.on('user_online', (data) => {
+      addSystemMessage(`${escapeBlessed(data.username)} is now online`, 'green');
+    });
+
+    // User Offline (global)
+    socketService.on('user_offline', (data) => {
+      addSystemMessage(`${escapeBlessed(data.username)} went offline`, 'gray');
+    });
   }
 
   // ============================================

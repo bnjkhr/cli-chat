@@ -98,6 +98,9 @@ io.on('connection', (socket) => {
     role
   });
 
+  // Benachrichtige alle anderen User, dass dieser User online ist
+  socket.broadcast.emit('user_online', { username });
+
   // ============================================
   // Chat Events
   // ============================================
@@ -188,6 +191,9 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', (reason) => {
     logger.info(`User disconnected: ${username} (${reason})`);
+
+    // Benachrichtige alle anderen User, dass dieser User offline ist
+    socket.broadcast.emit('user_offline', { username });
 
     // Wenn User in einem Raum war, anderen Bescheid geben
     if (socket.currentRoom) {
