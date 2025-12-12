@@ -37,7 +37,7 @@ export function createChatScreen(screen, userData, token) {
       border: { fg: 'cyan' },
       fg: 'white'
     },
-    content: ` {bold}{cyan-fg}CLI-CHAT v1.0{/cyan-fg}{/bold}                    Connected: {green-fg}${safeHeaderUsername}${role === 'admin' ? ' [ADMIN]' : ''}{/green-fg}`,
+    content: ` {bold}{cyan-fg}CLI-CHAT v1.2.1{/cyan-fg}{/bold} {gray-fg}| type /help for help{/gray-fg}        Connected: {green-fg}${safeHeaderUsername}${role === 'admin' ? ' [ADMIN]' : ''}{/green-fg}`,
     tags: true
   });
 
