@@ -203,8 +203,9 @@ export function createChatScreen(screen, userData, token) {
     } else {
       onlineUsers.forEach(user => {
         const roleIcon = user.role === 'admin' ? '{red-fg}★{/red-fg} ' : '';
-        const isCurrentUser = user.username === username ? '{green-fg}(you){/green-fg}' : '';
-        content += `${roleIcon}${escapeBlessed(user.username)} ${isCurrentUser}\n`;
+        const isCurrentUser = user.username === username ? ' {green-fg}(you){/green-fg}' : '';
+        const roomInfo = user.currentRoom ? ` {gray-fg}(#${escapeBlessed(user.currentRoom)}){/gray-fg}` : ' {gray-fg}(lobby){/gray-fg}';
+        content += `${roleIcon}${escapeBlessed(user.username)}${roomInfo}${isCurrentUser}\n`;
       });
     }
     onlineUsersBox.setContent(content);
@@ -263,30 +264,36 @@ export function createChatScreen(screen, userData, token) {
       messages = [];
       addSystemMessage(`Joined #${escapeBlessed(data.roomName)}`, 'green');
       updateRoomsList();
-      // Load online users for the room
-      socketService.getUsers();
+      // Load all online users with room info
+      socketService.getAllOnlineUsers();
     });
 
     // User Joined
     socketService.on('user_joined', (data) => {
       if (data.roomId === currentRoom?.id) {
         addSystemMessage(`${escapeBlessed(data.username)} joined the room`, 'yellow');
-        // Refresh online users list
-        socketService.getUsers();
       }
+      // Refresh online users list
+      socketService.getAllOnlineUsers();
     });
 
     // User Left
     socketService.on('user_left', (data) => {
       if (data.roomId === currentRoom?.id) {
         addSystemMessage(`${escapeBlessed(data.username)} left the room`, 'yellow');
-        // Refresh online users list
-        socketService.getUsers();
       }
+      // Refresh online users list
+      socketService.getAllOnlineUsers();
     });
 
-    // Users List (for current room)
+    // Users List (for current room - legacy)
     socketService.on('users_list', (data) => {
+      onlineUsers = data.users || [];
+      updateOnlineUsersList();
+    });
+
+    // All Online Users (with room info)
+    socketService.on('all_online_users', (data) => {
       onlineUsers = data.users || [];
       updateOnlineUsersList();
     });
@@ -337,11 +344,15 @@ export function createChatScreen(screen, userData, token) {
     // User Online (global)
     socketService.on('user_online', (data) => {
       addSystemMessage(`${escapeBlessed(data.username)} is now online`, 'green');
+      // Refresh online users list
+      socketService.getAllOnlineUsers();
     });
 
     // User Offline (global)
     socketService.on('user_offline', (data) => {
       addSystemMessage(`${escapeBlessed(data.username)} went offline`, 'gray');
+      // Refresh online users list
+      socketService.getAllOnlineUsers();
     });
   }
 

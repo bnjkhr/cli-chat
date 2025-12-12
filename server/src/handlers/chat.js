@@ -233,6 +233,34 @@ export async function handleGetUsers(io, socket) {
 }
 
 /**
+ * Handler: Alle Online-User mit Raum-Info auflisten
+ */
+export async function handleGetAllOnlineUsers(io, socket) {
+  try {
+    // Alle verbundenen Sockets finden
+    const allSockets = await io.fetchSockets();
+
+    // Raum-Namen aus DB holen
+    const { data: rooms } = await supabaseAdmin
+      .from('rooms')
+      .select('id, name');
+
+    const roomMap = new Map(rooms?.map(r => [r.id, r.name]) || []);
+
+    const users = allSockets.map(s => ({
+      username: s.username,
+      role: s.role,
+      currentRoom: s.currentRoom ? roomMap.get(s.currentRoom) || null : null
+    }));
+
+    socket.emit('all_online_users', { users });
+  } catch (error) {
+    logger.error('Get all online users error:', error);
+    socket.emit('error', { message: 'Failed to fetch online users' });
+  }
+}
+
+/**
  * Handler: Username zu User-ID auflösen
  */
 export async function handleResolveUser(socket, data) {

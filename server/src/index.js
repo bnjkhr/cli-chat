@@ -13,6 +13,7 @@ import {
   handleLeaveRoom,
   handleGetRooms,
   handleGetUsers,
+  handleGetAllOnlineUsers,
   handleResolveUser
 } from './handlers/chat.js';
 import {
@@ -129,6 +130,11 @@ io.on('connection', (socket) => {
   // User im Raum auflisten
   socket.on('get_users', () => {
     handleGetUsers(io, socket);
+  });
+
+  // Alle Online-User mit Raum-Info auflisten
+  socket.on('get_all_online_users', () => {
+    handleGetAllOnlineUsers(io, socket);
   });
 
   // Username zu User-ID auflösen (für DMs)

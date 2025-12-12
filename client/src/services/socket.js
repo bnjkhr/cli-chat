@@ -119,6 +119,13 @@ class SocketService {
   }
 
   /**
+   * Alle Online-User mit Raum-Info abrufen
+   */
+  getAllOnlineUsers() {
+    this.socket.emit('get_all_online_users');
+  }
+
+  /**
    * Admin: Raum erstellen
    */
   adminCreateRoom(name, description) {
