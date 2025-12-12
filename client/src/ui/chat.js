@@ -3,6 +3,23 @@ import socketService from '../services/socket.js';
 import authService from '../services/auth.js';
 import { parseCommand, getHelpText } from '../utils/commands.js';
 
+const CURRENT_VERSION = '1.2.2';
+const PACKAGE_NAME = '@bnjkhr/cli-chat-client';
+
+/**
+ * Prüft auf neue Version via npm Registry
+ */
+async function checkForUpdates() {
+  try {
+    const response = await fetch(`https://registry.npmjs.org/${PACKAGE_NAME}/latest`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.version;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Main Chat Screen
  */
@@ -37,7 +54,7 @@ export function createChatScreen(screen, userData, token) {
       border: { fg: 'cyan' },
       fg: 'white'
     },
-    content: ` {bold}{cyan-fg}CLI-CHAT v1.2.1{/cyan-fg}{/bold} {gray-fg}| type /help for help{/gray-fg}        Connected: {green-fg}${safeHeaderUsername}${role === 'admin' ? ' [ADMIN]' : ''}{/green-fg}`,
+    content: ` {bold}{cyan-fg}CLI-CHAT v${CURRENT_VERSION}{/cyan-fg}{/bold} {gray-fg}| type /help for help{/gray-fg}        Connected: {green-fg}${safeHeaderUsername}${role === 'admin' ? ' [ADMIN]' : ''}{/green-fg}`,
     tags: true
   });
 
@@ -562,6 +579,14 @@ export function createChatScreen(screen, userData, token) {
 
   async function initialize() {
     try {
+      // Auf Updates prüfen (im Hintergrund)
+      checkForUpdates().then(latestVersion => {
+        if (latestVersion && latestVersion !== CURRENT_VERSION) {
+          addSystemMessage(`Update available: v${latestVersion} (current: v${CURRENT_VERSION})`, 'yellow');
+          addSystemMessage(`Run: npm update -g ${PACKAGE_NAME}`, 'yellow');
+        }
+      });
+
       addSystemMessage('Connecting to server...', 'yellow');
       setupSocketListeners(); // Set up listeners BEFORE connecting
       await socketService.connect(token);
