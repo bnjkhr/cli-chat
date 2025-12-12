@@ -126,6 +126,20 @@ class SocketService {
   }
 
   /**
+   * DM-Konversationen abrufen
+   */
+  getDMConversations() {
+    this.socket.emit('get_dm_conversations');
+  }
+
+  /**
+   * DM-History mit einem User laden
+   */
+  getDMHistory(oderId) {
+    this.socket.emit('get_dm_history', { oderId });
+  }
+
+  /**
    * Admin: Raum erstellen
    */
   adminCreateRoom(name, description) {

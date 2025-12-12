@@ -34,12 +34,23 @@ export function parseCommand(input) {
 
     case 'msg':
     case 'dm':
-      if (args.length < 2) {
-        return { type: 'error', message: 'Usage: /msg @username message' };
+      if (args.length === 0) {
+        return { type: 'error', message: 'Usage: /dm @username [message]' };
       }
       const recipient = args[0].replace('@', '');
+      if (args.length === 1) {
+        // Keine Nachricht = DM-Konversation öffnen
+        return { type: 'open_dm', recipient };
+      }
       const message = args.slice(1).join(' ');
       return { type: 'dm', recipient, message };
+
+    case 'dms':
+      return { type: 'dms' };
+
+    case 'back':
+    case 'room':
+      return { type: 'back' };
 
     case 'admin':
       return parseAdminCommand(args);
@@ -114,8 +125,13 @@ export function getHelpText() {
 ║  /join #room                - Join a chat room             ║
 ║  /rooms                     - List all rooms               ║
 ║  /users                     - List users in current room   ║
-║  /msg @username text        - Send private message         ║
 ║  /quit                      - Exit the chat                ║
+║                                                            ║
+║  Direct Messages:                                          ║
+║  /dm @user                  - Open DM conversation         ║
+║  /dm @user text             - Send direct message          ║
+║  /dms                       - List DM conversations        ║
+║  /back                      - Return to room chat          ║
 ║                                                            ║
 ║  Admin Commands:                                           ║
 ║  /admin create-room #name [desc]  - Create new room        ║

@@ -14,7 +14,9 @@ import {
   handleGetRooms,
   handleGetUsers,
   handleGetAllOnlineUsers,
-  handleResolveUser
+  handleResolveUser,
+  handleGetDMConversations,
+  handleGetDMHistory
 } from './handlers/chat.js';
 import {
   handleCreateRoom,
@@ -140,6 +142,16 @@ io.on('connection', (socket) => {
   // Username zu User-ID auflösen (für DMs)
   socket.on('resolve_user', (data) => {
     handleResolveUser(socket, data);
+  });
+
+  // DM-Konversationen auflisten
+  socket.on('get_dm_conversations', () => {
+    handleGetDMConversations(socket);
+  });
+
+  // DM-History mit einem User laden
+  socket.on('get_dm_history', (data) => {
+    handleGetDMHistory(socket, data);
   });
 
   // ============================================

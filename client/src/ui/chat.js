@@ -8,10 +8,13 @@ import { parseCommand, getHelpText } from '../utils/commands.js';
  */
 export function createChatScreen(screen, userData, token) {
   const { username, role } = userData.user;
+  const userId = userData.user.id;
   let currentRoom = null;
+  let currentDM = null; // { oderId, username } - aktive DM-Konversation
   let rooms = [];
   let messages = [];
   let onlineUsers = [];
+  let dmConversations = []; // Liste der DM-Partner
 
   // ============================================
   // Layout
@@ -228,10 +231,20 @@ export function createChatScreen(screen, userData, token) {
     socketService.on('message', (msg) => {
       // DM erhalten oder gesendet
       if (msg.recipientId) {
-        addMessage(msg, 'magenta', true);
+        // Im DM-Modus: Zeige nur DMs mit dem aktuellen Partner
+        if (currentDM) {
+          const isFromPartner = msg.username === currentDM.username;
+          const isToPartner = msg.recipientId === currentDM.oderId;
+          if (isFromPartner || isToPartner) {
+            addMessage(msg, 'magenta', true);
+          }
+        } else {
+          // Im Room-Modus: Zeige DM-Benachrichtigung
+          addSystemMessage(`New DM from ${escapeBlessed(msg.username)} - use /dm @${escapeBlessed(msg.username)} to open`, 'magenta');
+        }
       }
-      // Room-Nachricht (nur wenn im richtigen Raum)
-      else if (msg.roomId === currentRoom?.id) {
+      // Room-Nachricht (nur wenn im richtigen Raum und nicht im DM-Modus)
+      else if (!currentDM && msg.roomId === currentRoom?.id) {
         addMessage(msg, 'cyan');
       }
     });
@@ -354,6 +367,34 @@ export function createChatScreen(screen, userData, token) {
       // Refresh online users list
       socketService.getAllOnlineUsers();
     });
+
+    // DM Conversations Liste
+    socketService.on('dm_conversations', (data) => {
+      dmConversations = data.conversations || [];
+      let list = '\n{magenta-fg}DM Conversations:{/magenta-fg}\n';
+      if (dmConversations.length === 0) {
+        list += '  {gray-fg}No conversations yet{/gray-fg}\n';
+      } else {
+        dmConversations.forEach(conv => {
+          list += `  @${escapeBlessed(conv.username)}\n`;
+        });
+      }
+      list += '\n{gray-fg}Use /dm @username to open a conversation{/gray-fg}';
+      messages.push(list);
+      renderMessages();
+    });
+
+    // DM History
+    socketService.on('dm_history', (data) => {
+      currentDM = { oderId: data.oderId, username: data.partnerUsername };
+      messages = [];
+      messageWindow.setLabel(` DM: @${escapeBlessed(data.partnerUsername)} `);
+      addSystemMessage(`Conversation with @${escapeBlessed(data.partnerUsername)}`, 'magenta');
+      data.messages.forEach(msg => {
+        addMessage(msg, 'magenta', true);
+      });
+      addSystemMessage('Type /back to return to room chat', 'gray');
+    });
   }
 
   // ============================================
@@ -363,7 +404,12 @@ export function createChatScreen(screen, userData, token) {
   function handleCommand(cmd) {
     switch (cmd.type) {
       case 'message':
-        if (currentRoom) {
+        // Im DM-Modus: Sende an DM-Partner
+        if (currentDM) {
+          socketService.sendDM(currentDM.oderId, cmd.content);
+        }
+        // Im Room-Modus: Sende an Raum
+        else if (currentRoom) {
           socketService.sendMessage(currentRoom.id, cmd.content);
         } else {
           addSystemMessage('You are not in a room. Use /join #roomname', 'red');
@@ -440,6 +486,39 @@ export function createChatScreen(screen, userData, token) {
             addSystemMessage(`User "${escapeBlessed(cmd.recipient)}" not found`, 'red');
           }
         })();
+        break;
+
+      case 'open_dm':
+        (async () => {
+          addSystemMessage(`Opening conversation with @${escapeBlessed(cmd.recipient)}...`, 'gray');
+          const oderId = await socketService.resolveUser(cmd.recipient);
+          if (oderId) {
+            socketService.getDMHistory(oderId);
+          } else {
+            addSystemMessage(`User "${escapeBlessed(cmd.recipient)}" not found`, 'red');
+          }
+        })();
+        break;
+
+      case 'dms':
+        socketService.getDMConversations();
+        break;
+
+      case 'back':
+        if (currentDM) {
+          currentDM = null;
+          messages = [];
+          if (currentRoom) {
+            messageWindow.setLabel(` #${escapeBlessed(currentRoom.name)} `);
+            addSystemMessage(`Back to #${escapeBlessed(currentRoom.name)}`, 'green');
+            socketService.joinRoom(currentRoom.id); // Lade Room-History neu
+          } else {
+            messageWindow.setLabel(' Messages ');
+            addSystemMessage('Left DM mode. Join a room with /join #roomname', 'yellow');
+          }
+        } else {
+          addSystemMessage('You are not in a DM conversation', 'yellow');
+        }
         break;
 
       case 'error':

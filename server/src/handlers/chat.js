@@ -287,3 +287,105 @@ export async function handleResolveUser(socket, data) {
     socket.emit('user_resolved', { username, userId: null, error: 'Failed to resolve user' });
   }
 }
+
+/**
+ * Handler: DM-Konversationen auflisten (User mit denen man DMs hat)
+ */
+export async function handleGetDMConversations(socket) {
+  const userId = socket.userId;
+
+  try {
+    // Alle User finden mit denen man DMs ausgetauscht hat
+    const { data: conversations, error } = await supabaseAdmin
+      .from('messages')
+      .select(`
+        recipient_id,
+        user_id,
+        created_at,
+        sender:profiles!user_id(id, username),
+        recipient:profiles!recipient_id(id, username)
+      `)
+      .not('recipient_id', 'is', null)
+      .or(`user_id.eq.${userId},recipient_id.eq.${userId}`)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Unique Konversationspartner extrahieren
+    const partnersMap = new Map();
+    conversations?.forEach(msg => {
+      const partnerId = msg.user_id === userId ? msg.recipient_id : msg.user_id;
+      const partner = msg.user_id === userId ? msg.recipient : msg.sender;
+      if (partner && !partnersMap.has(partnerId)) {
+        partnersMap.set(partnerId, {
+          oderId: partner.id,
+          username: partner.username,
+          lastMessageAt: msg.created_at
+        });
+      }
+    });
+
+    const dmConversations = Array.from(partnersMap.values());
+    socket.emit('dm_conversations', { conversations: dmConversations });
+  } catch (error) {
+    logger.error('Get DM conversations error:', error);
+    socket.emit('error', { message: 'Failed to fetch DM conversations' });
+  }
+}
+
+/**
+ * Handler: DM-History mit einem bestimmten User laden
+ */
+export async function handleGetDMHistory(socket, data) {
+  if (!data || !data.oderId) {
+    return socket.emit('error', { message: 'Partner user ID required' });
+  }
+
+  const userId = socket.userId;
+  const { oderId } = data;
+
+  try {
+    // Lade DMs zwischen den beiden Usern
+    const { data: messages, error } = await supabaseAdmin
+      .from('messages')
+      .select(`
+        id,
+        content,
+        created_at,
+        user_id,
+        recipient_id,
+        user:profiles!user_id(username, role)
+      `)
+      .not('recipient_id', 'is', null)
+      .or(`and(user_id.eq.${userId},recipient_id.eq.${oderId}),and(user_id.eq.${oderId},recipient_id.eq.${userId})`)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    // Hole Partner-Info
+    const { data: partner } = await supabaseAdmin
+      .from('profiles')
+      .select('id, username')
+      .eq('id', oderId)
+      .single();
+
+    const formattedMessages = messages?.reverse().map(msg => ({
+      id: msg.id,
+      content: msg.content,
+      username: msg.user.username,
+      role: msg.user.role,
+      created_at: msg.created_at,
+      recipientId: msg.recipient_id
+    })) || [];
+
+    socket.emit('dm_history', {
+      oderId,
+      partnerUsername: partner?.username,
+      messages: formattedMessages
+    });
+  } catch (error) {
+    logger.error('Get DM history error:', error);
+    socket.emit('error', { message: 'Failed to fetch DM history' });
+  }
+}
