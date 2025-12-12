@@ -115,6 +115,7 @@ export async function handleJoinRoom(io, socket, data) {
     // Socket.io Raum beitreten
     socket.join(`room:${roomId}`);
     socket.currentRoom = roomId;
+    socket.data.currentRoom = roomId; // Für fetchSockets()
 
     logger.info(`${username} joined room: ${room.name}`);
 
@@ -176,6 +177,7 @@ export async function handleLeaveRoom(socket, data) {
 
   socket.leave(`room:${roomId}`);
   socket.currentRoom = null;
+  socket.data.currentRoom = null; // Für fetchSockets()
 
   logger.debug(`${username} left room ${roomId}`);
 
@@ -248,9 +250,9 @@ export async function handleGetAllOnlineUsers(io, socket) {
     const roomMap = new Map(rooms?.map(r => [r.id, r.name]) || []);
 
     const users = allSockets.map(s => ({
-      username: s.username,
-      role: s.role,
-      currentRoom: s.currentRoom ? roomMap.get(s.currentRoom) || null : null
+      username: s.data.username || s.username,
+      role: s.data.role || s.role,
+      currentRoom: s.data.currentRoom ? roomMap.get(s.data.currentRoom) || null : null
     }));
 
     socket.emit('all_online_users', { users });

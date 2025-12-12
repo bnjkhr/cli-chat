@@ -3,7 +3,7 @@ import socketService from '../services/socket.js';
 import authService from '../services/auth.js';
 import { parseCommand, getHelpText } from '../utils/commands.js';
 
-const CURRENT_VERSION = '1.2.3';
+const CURRENT_VERSION = '1.2.4';
 const PACKAGE_NAME = '@bnjkhr/cli-chat-client';
 
 /**

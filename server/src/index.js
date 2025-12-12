@@ -90,6 +90,11 @@ io.use(authenticateSocket);
 io.on('connection', (socket) => {
   const { userId, username, role } = socket;
 
+  // Speichere User-Daten in socket.data für fetchSockets()
+  socket.data.userId = userId;
+  socket.data.username = username;
+  socket.data.role = role;
+
   logger.info(`User connected: ${username} (${userId})`);
 
   // User-spezifischer Raum (für DMs und Notifications)
