@@ -206,6 +206,9 @@ export function createLoginScreen(screen, onSuccess) {
       onSuccess(result.data);
     } else {
       errorText.setContent(`{red-fg}${result.error}{/red-fg}`);
+      // Passwort leeren und Fokus zurücksetzen
+      passwordInput.clearValue();
+      passwordInput.focus();
       screen.render();
     }
   }
